@@ -7,8 +7,8 @@ import { fetchMockJobs } from "./mock-job-source";
 
 const DEFAULT_LINKEDIN_URLS = [
   "https://www.linkedin.com/jobs/search/?currentJobId=4400700367&distance=25.0&f_AL=true&geoId=103644278&keywords=AI%20Software%20Engineer&origin=JOBS_HOME_KEYWORD_HISTORY",
-  // "https://www.linkedin.com/jobs/search/?currentJobId=4335537265&f_AL=true&geoId=91000000&keywords=AI%20Software%20Engineer&origin=JOB_SEARCH_PAGE_LOCATION_AUTOCOMPLETE&refresh=true",
-  // "https://www.linkedin.com/jobs/search/?currentJobId=4400703330&f_AL=true&geoId=102105699&keywords=AI%20Software%20Engineer&origin=JOB_SEARCH_PAGE_LOCATION_AUTOCOMPLETE&refresh=true",
+  "https://www.linkedin.com/jobs/search/?currentJobId=4335537265&f_AL=true&geoId=91000000&keywords=AI%20Software%20Engineer&origin=JOB_SEARCH_PAGE_LOCATION_AUTOCOMPLETE&refresh=true",
+  "https://www.linkedin.com/jobs/search/?currentJobId=4400703330&f_AL=true&geoId=102105699&keywords=AI%20Software%20Engineer&origin=JOB_SEARCH_PAGE_LOCATION_AUTOCOMPLETE&refresh=true",
 ];
 
 export const syncJobsForToday = async (): Promise<SyncResponse> => {

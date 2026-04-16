@@ -1,32 +1,10 @@
 import type { JobItem } from "@job-pipeline/shared";
 
+import { JobsTable } from "../components/jobs-table";
 import { SyncButton } from "../components/sync-button";
 import { getJobs } from "../lib/api";
-import { formatDateTime } from "../lib/date";
 
 export const dynamic = "force-dynamic";
-
-const renderJobs = (jobs: JobItem[]) => {
-  if (jobs.length === 0) {
-    return (
-      <tr>
-        <td className="px-4 py-8 text-center text-sm text-stone-500" colSpan={5}>
-          No jobs synced yet. Use the button above to pull today&apos;s listings.
-        </td>
-      </tr>
-    );
-  }
-
-  return jobs.map((job) => (
-    <tr className="border-t border-line/70" key={job.id}>
-      <td className="px-4 py-4 font-medium text-ink">{job.title}</td>
-      <td className="px-4 py-4 text-stone-700">{job.company}</td>
-      <td className="px-4 py-4 text-stone-700">{job.location}</td>
-      <td className="px-4 py-4 text-stone-700">{job.source}</td>
-      <td className="px-4 py-4 text-stone-700">{formatDateTime(job.createdAt)}</td>
-    </tr>
-  ));
-};
 
 export default async function DashboardPage() {
   let jobs: JobItem[] = [];
@@ -71,22 +49,11 @@ export default async function DashboardPage() {
         <div className="border-b border-line/80 px-5 py-4 sm:px-6">
           <h2 className="text-lg font-semibold text-ink">Jobs</h2>
           <p className="text-sm text-stone-500">
-            Sorted by most recently created records in the database.
+            Sorted by most recently created. Click a row to view details.
           </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-surface/80 text-xs uppercase tracking-[0.18em] text-stone-500">
-              <tr>
-                <th className="px-4 py-3 font-medium">Title</th>
-                <th className="px-4 py-3 font-medium">Company</th>
-                <th className="px-4 py-3 font-medium">Location</th>
-                <th className="px-4 py-3 font-medium">Source</th>
-                <th className="px-4 py-3 font-medium">Created At</th>
-              </tr>
-            </thead>
-            <tbody>{renderJobs(jobs)}</tbody>
-          </table>
+          <JobsTable jobs={jobs} />
         </div>
       </section>
     </main>

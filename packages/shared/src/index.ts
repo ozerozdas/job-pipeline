@@ -2,12 +2,35 @@ export type JobSource = "linkedin" | "greenhouse" | "lever" | "indeed" | string;
 
 export interface JobItem {
   id: string;
+  externalId: string | null;
   title: string;
   company: string;
+  companyLinkedinUrl: string | null;
+  companyLogo: string | null;
   location: string;
   url: string;
   description: string;
+  descriptionHtml: string | null;
   source: JobSource;
+  postedAt: string | null;
+  benefits: string[];
+  applicantsCount: string | null;
+  applyUrl: string | null;
+  salary: string | null;
+  seniorityLevel: string | null;
+  employmentType: string | null;
+  jobFunction: string | null;
+  industries: string | null;
+  applyMethod: string | null;
+  expireAt: string | null;
+  workplaceTypes: string[];
+  workRemoteAllowed: boolean | null;
+  standardizedTitle: string | null;
+  country: string | null;
+  jobPosterName: string | null;
+  jobPosterTitle: string | null;
+  jobPosterPhoto: string | null;
+  jobPosterProfileUrl: string | null;
   createdAt: string;
   syncedAt: string | null;
 }
