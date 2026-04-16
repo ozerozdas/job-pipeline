@@ -6,3 +6,4 @@ coverage
 .DS_Store
 *.log
 packages/db/generated
+.env
