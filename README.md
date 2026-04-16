@@ -1,158 +1,60 @@
-# Job Pipeline Monorepo
+# Job Pipeline
 
-Minimal MVP for a daily job aggregation pipeline built with `pnpm` and `Turborepo`.
+A daily job aggregation and AI-powered matching pipeline. Scrapes LinkedIn job listings via Apify, lets you upload your resume, and uses AI (Anthropic Claude / OpenAI GPT-4o) to score each job against your profile.
 
-## Stack
+## How It Works
 
-- `apps/api`: Fastify + TypeScript
-- `apps/web`: Next.js App Router + Tailwind CSS
-- `packages/db`: Prisma + PostgreSQL
-- `packages/shared`: shared types and date helpers
+1. You add LinkedIn job search URLs as data sources.
+2. The app scrapes those listings daily through Apify and stores them in PostgreSQL.
+3. You upload your resume — AI extracts your skills, experience, and seniority.
+4. The analyzer scores every unscored job (0–100) against your resume and explains why.
+5. The dashboard shows all jobs sorted by match score so you can focus on the best fits.
 
-## Project Structure
+**Stack:** Next.js · Fastify · Prisma · PostgreSQL · Anthropic · OpenAI · Apify · pnpm + Turborepo
 
-```text
-apps/
-  api/
-  web/
-packages/
-  db/
-  shared/
+## Screenshots
+
+<img src="./screenshots/listing.png" alt="Job Listing Screenshot" width="600" /><br />
+<img src="./screenshots/details.png" alt="Job Details Screenshot" width="600" /><br />
+<img src="./screenshots/cover-letter.png" alt="Cover Letter Screenshot" width="600" />
+
+## Setup
+
+```bash
+pnpm install          # install dependencies
+pnpm docker:up        # start PostgreSQL
+pnpm db:push          # push Prisma schema
+pnpm dev              # start API + web
 ```
 
-## Local Setup
+The app runs at `http://localhost:3000` (web) and `http://localhost:3001` (API).
 
-1. Install dependencies:
+## API Keys
 
-   ```bash
-   pnpm install
-   ```
+Add the following keys to your `.env` file:
 
-2. Start PostgreSQL:
+| Variable | How to get it |
+|---|---|
+| `APIFY_TOKEN` | Sign up at [apify.com](https://apify.com), go to **Settings → Integrations → API Tokens** and create a token. |
+| `OPENAI_API_KEY` | Sign up at [platform.openai.com](https://platform.openai.com), go to **API Keys** and create a new secret key. |
+| `ANTHROPIC_API_KEY` | Sign up at [console.anthropic.com](https://console.anthropic.com), go to **API Keys** and generate a key. |
 
-   ```bash
-   pnpm docker:up
-   ```
+At least one AI key (OpenAI or Anthropic) is required for resume analysis and job scoring. Apify is required for real job scraping — without it the sync falls back to mock data.
 
-3. Push the Prisma schema:
+## Usage
 
-   ```bash
-   pnpm db:push
-   ```
+### Search URLs
 
-4. Start both apps:
+Click **Manage Search URLs** on the dashboard. Paste LinkedIn job search URLs here — these are the queries Apify will scrape. To get a URL, go to [linkedin.com/jobs](https://www.linkedin.com/jobs/), set your filters (title, location, remote, etc.), and copy the URL from your browser's address bar.
 
-   ```bash
-   pnpm dev
-   ```
+### Sync Today's Jobs
 
-## Commands
+Click **Sync Today's Jobs** to scrape all configured search URLs and import new listings into the database. The sync runs once per day — pressing it again on the same day is a no-op.
 
-- `pnpm dev`: run API and web in parallel via Turborepo
-- `pnpm docker:up`: start PostgreSQL in Docker
-- `pnpm docker:down`: stop the Docker stack
-- `pnpm db:generate`: generate Prisma client
-- `pnpm db:push`: push Prisma schema to PostgreSQL
-- `pnpm db:studio`: open Prisma Studio
-- `pnpm build`: production build for the monorepo
+### Upload Resume
 
-## Environment Variables
+Click **Upload Resume** and select a `.pdf`, `.txt`, or `.md` file (max 5 MB). The AI parses your resume and extracts a profile: summary, skills, experience years, seniority level, preferred roles, industries, and education.
 
-The repo includes a ready-to-run `.env` for local development and an `.env.example` template.
+### Analyze Unscored Jobs
 
-```env
-POSTGRES_DB=jobs_db
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_PORT=5432
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/jobs_db?schema=public
-API_PORT=3001
-WEB_PORT=3000
-API_BASE_URL=http://localhost:3001
-NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
-WEB_ORIGIN=http://localhost:3000
-APP_TIMEZONE=UTC
-```
-
-## API
-
-### `GET /jobs`
-
-Returns all jobs ordered by `createdAt DESC`.
-
-### `POST /sync`
-
-- checks whether today already has a `SyncLog`
-- returns `"Already synced today"` if the current server day was already processed
-- otherwise fetches mocked external jobs, inserts only unique URLs, writes a `SyncLog`, and returns the inserted count
-
-## Database
-
-Prisma models:
-
-- `Job`
-  - `id` UUID
-  - `title`
-  - `company`
-  - `location`
-  - `url` unique
-  - `description`
-  - `source`
-  - `createdAt`
-  - `syncedAt`
-- `SyncLog`
-  - `id`
-  - `date` unique per day
-  - `status` success or failed
-  - `createdAt`
-
-## Web Dashboard
-
-The Next.js app shows:
-
-- a `Sync Today's Jobs` button wired to `POST /sync`
-- sync feedback for the current action
-- a jobs table with title, company, location, source, and created date
-
-## Apify Integration
-
-The API uses the [LinkedIn Jobs Scraper](https://apify.com/curious_coder/linkedin-jobs-scraper) Apify actor to fetch real job listings.
-
-Set `APIFY_TOKEN` in `.env` to enable it. When the token is empty the sync endpoint falls back to the mock source.
-
-```env
-APIFY_TOKEN=your_apify_api_token
-APIFY_ACTOR_ID=hKByXkMQaC5Qt9UMN
-```
-
-The actor input defaults to:
-
-```json
-{
-  "urls": ["https://www.linkedin.com/jobs/search/?position=1&pageNum=0"],
-  "scrapeCompany": true,
-  "count": 100,
-  "splitByLocation": false
-}
-```
-
-Each scraped item is normalized into the shared `ExternalJobListing` shape before being inserted via `createMany` with `skipDuplicates`.
-
-## Where To Extend Scoring And AI Logic
-
-The clean place to extend this is inside the API service layer after raw jobs are fetched and before `createMany` runs.
-
-Typical additions:
-
-- enrichment step: normalize seniority, remote policy, salary, or tags
-- scoring step: rank jobs against user preferences or embeddings
-- AI summary step: generate concise role summaries or fit explanations
-
-That logic belongs in a dedicated service under `apps/api/src/services/`, not inside the route handlers or the Prisma package.
-
-## Suggested Next Steps
-
-1. Replace the mock source with Apify and persist raw source payloads if debugging imports matters.
-2. Add pagination and filters to `GET /jobs`.
-3. Add a background scheduler or queue if sync should run automatically instead of manually.
-4. Add tests for sync idempotency, duplicate handling, and API contract responses.
+Click **Analyze Unscored Jobs** to score every job that hasn't been scored yet against your latest resume profile. Each job gets a 0–100 match score with a short reasoning. Jobs are then sorted by score on the dashboard.
