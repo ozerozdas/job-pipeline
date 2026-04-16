@@ -99,6 +99,18 @@ export interface ResumeProfileResponse {
   createdAt: string;
 }
 
+export interface SearchUrlItem {
+  id: string;
+  url: string;
+  label: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SearchUrlsResponse {
+  urls: SearchUrlItem[];
+}
+
 export interface ResumeUploadResponse {
   status: "success";
   message: string;

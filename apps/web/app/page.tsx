@@ -2,6 +2,7 @@ import type { JobItem } from "@job-pipeline/shared";
 
 import { AnalyzeJobsButton } from "../components/analyze-jobs-button";
 import { JobsTable } from "../components/jobs-table";
+import { ManageSearchUrlsButton } from "../components/manage-search-urls-button";
 import { ResumeUploadButton } from "../components/resume-upload-button";
 import { SyncButton } from "../components/sync-button";
 import { getJobs, getResumeProfile } from "../lib/api";
@@ -47,6 +48,9 @@ export default async function DashboardPage() {
       <section className="flex flex-wrap items-start gap-3">
         {/* Step 1: Always visible */}
         <SyncButton />
+
+        {/* Manage search URLs */}
+        <ManageSearchUrlsButton />
 
         {/* Step 2: Always visible (can upload anytime) */}
         <ResumeUploadButton />

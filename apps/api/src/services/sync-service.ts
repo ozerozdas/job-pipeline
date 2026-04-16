@@ -4,12 +4,7 @@ import { dateKeyToDate, getDateKey, type SyncResponse } from "@job-pipeline/shar
 import { env } from "../lib/env";
 import { fetchApifyJobs } from "./apify-job-source";
 import { fetchMockJobs } from "./mock-job-source";
-
-const DEFAULT_LINKEDIN_URLS = [
-  "https://www.linkedin.com/jobs/search/?currentJobId=4400700367&distance=25.0&f_AL=true&geoId=103644278&keywords=AI%20Software%20Engineer&origin=JOBS_HOME_KEYWORD_HISTORY",
-  "https://www.linkedin.com/jobs/search/?currentJobId=4335537265&f_AL=true&geoId=91000000&keywords=AI%20Software%20Engineer&origin=JOB_SEARCH_PAGE_LOCATION_AUTOCOMPLETE&refresh=true",
-  "https://www.linkedin.com/jobs/search/?currentJobId=4400703330&f_AL=true&geoId=102105699&keywords=AI%20Software%20Engineer&origin=JOB_SEARCH_PAGE_LOCATION_AUTOCOMPLETE&refresh=true",
-];
+import { getSearchUrlStrings } from "./search-url-service";
 
 export const syncJobsForToday = async (): Promise<SyncResponse> => {
   const dateKey = getDateKey(new Date(), env.appTimeZone);
@@ -31,8 +26,9 @@ export const syncJobsForToday = async (): Promise<SyncResponse> => {
   }
 
   try {
+    const searchUrls = await getSearchUrlStrings();
     const externalJobs = env.apifyToken
-      ? await fetchApifyJobs(DEFAULT_LINKEDIN_URLS)
+      ? await fetchApifyJobs(searchUrls)
       : await fetchMockJobs(dateKey);
     const syncedAt = new Date();
 

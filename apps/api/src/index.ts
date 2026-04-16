@@ -6,6 +6,7 @@ import { registerAnalyzeRoutes } from "./routes/analyze";
 import { registerCoverLetterRoutes } from "./routes/cover-letter";
 import { registerJobRoutes } from "./routes/jobs";
 import { registerResumeRoutes } from "./routes/resume";
+import { registerSearchUrlRoutes } from "./routes/search-urls";
 import { registerSyncRoutes } from "./routes/sync";
 
 const buildApp = async () => {
@@ -26,6 +27,7 @@ const buildApp = async () => {
   await app.register(registerResumeRoutes);
   await app.register(registerAnalyzeRoutes);
   await app.register(registerCoverLetterRoutes);
+  await app.register(registerSearchUrlRoutes);
 
   return app;
 };

@@ -1,4 +1,4 @@
-import type { JobsResponse, ResumeProfileResponse } from "@job-pipeline/shared";
+import type { JobsResponse, ResumeProfileResponse, SearchUrlsResponse } from "@job-pipeline/shared";
 
 const apiBaseUrl = process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
 
@@ -31,3 +31,15 @@ export const getResumeProfile = async (): Promise<ResumeProfileResponse | null> 
 
 export const getClientApiBaseUrl = () =>
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
+
+export const getSearchUrls = async (): Promise<SearchUrlsResponse> => {
+  const response = await fetch(`${apiBaseUrl}/search-urls`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to load search URLs");
+  }
+
+  return (await response.json()) as SearchUrlsResponse;
+};
