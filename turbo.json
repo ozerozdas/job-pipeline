@@ -10,7 +10,8 @@
     "APP_TIMEZONE",
     "APIFY_TOKEN",
     "APIFY_ACTOR_ID",
-    "ANTHROPIC_API_KEY"
+    "ANTHROPIC_API_KEY",
+    "OPENAI_API_KEY"
   ],
   "tasks": {
     "build": {

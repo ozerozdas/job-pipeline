@@ -13,5 +13,6 @@ export const env = {
   appTimeZone: process.env.APP_TIMEZONE ?? "UTC",
   apifyToken: process.env.APIFY_TOKEN ?? "",
   apifyActorId: process.env.APIFY_ACTOR_ID ?? "hKByXkMQaC5Qt9UMN",
-  anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? ""
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? "",
+  openaiApiKey: process.env.OPENAI_API_KEY ?? ""
 };

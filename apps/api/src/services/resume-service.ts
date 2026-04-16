@@ -1,36 +1,10 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "@job-pipeline/db";
 import type { ResumeAnalysis, ResumeProfileResponse } from "@job-pipeline/shared";
 
-import { env } from "../lib/env";
-
-const stripMarkdownFences = (text: string): string =>
-  text.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
-
-const MODEL = "claude-sonnet-4-20250514";
-
-let anthropic: Anthropic | null = null;
-
-const getClient = () => {
-  if (!anthropic) {
-    if (!env.anthropicApiKey) {
-      throw new Error("ANTHROPIC_API_KEY is not configured");
-    }
-    anthropic = new Anthropic({ apiKey: env.anthropicApiKey });
-  }
-  return anthropic;
-};
+import { getJsonResponse } from "../lib/ai";
 
 const analyzeResume = async (resumeText: string): Promise<ResumeAnalysis> => {
-  const client = getClient();
-
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: 2048,
-    messages: [
-      {
-        role: "user",
-        content: `Analyze the following resume and return a JSON object with these exact fields:
+  return getJsonResponse<ResumeAnalysis>(`Analyze the following resume and return a JSON object with these exact fields:
 - summary: a 2-3 sentence professional summary
 - skills: array of technical and soft skills
 - experienceYears: estimated total years of experience (number)
@@ -42,17 +16,7 @@ const analyzeResume = async (resumeText: string): Promise<ResumeAnalysis> => {
 Return ONLY valid JSON, no markdown fences or extra text.
 
 Resume:
-${resumeText}`
-      }
-    ]
-  });
-
-  const block = message.content[0];
-  if (block.type !== "text") {
-    throw new Error("Unexpected response from AI");
-  }
-
-  return JSON.parse(stripMarkdownFences(block.text)) as ResumeAnalysis;
+${resumeText}`);
 };
 
 const serializeProfile = (
@@ -68,12 +32,15 @@ export const uploadAndAnalyzeResume = async (
   resumeText: string,
   fileName?: string
 ): Promise<ResumeProfileResponse> => {
-  const analysis = await analyzeResume(resumeText);
+  const sanitized = resumeText.replace(/\0/g, "");
+  // Truncate to ~15k chars (~4k tokens) — more than enough for any resume
+  const truncated = sanitized.slice(0, 15000);
+  const analysis = await analyzeResume(truncated);
 
   const profile = await prisma.resumeProfile.create({
     data: {
       fileName: fileName ?? null,
-      rawText: resumeText,
+      rawText: sanitized,
       analysis: JSON.stringify(analysis)
     }
   });

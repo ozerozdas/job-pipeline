@@ -1,25 +1,7 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "@job-pipeline/db";
 import type { AnalyzeJobsResponse, JobScoreItem, ResumeAnalysis } from "@job-pipeline/shared";
 
-import { env } from "../lib/env";
-
-const stripMarkdownFences = (text: string): string =>
-  text.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
-
-const MODEL = "claude-sonnet-4-20250514";
-
-let anthropic: Anthropic | null = null;
-
-const getClient = () => {
-  if (!anthropic) {
-    if (!env.anthropicApiKey) {
-      throw new Error("ANTHROPIC_API_KEY is not configured");
-    }
-    anthropic = new Anthropic({ apiKey: env.anthropicApiKey });
-  }
-  return anthropic;
-};
+import { getJsonResponse } from "../lib/ai";
 
 const scoreJob = async (
   jobTitle: string,
@@ -27,15 +9,7 @@ const scoreJob = async (
   company: string,
   analysis: ResumeAnalysis
 ): Promise<{ score: number; reasoning: string }> => {
-  const client = getClient();
-
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: 1024,
-    messages: [
-      {
-        role: "user",
-        content: `Score the following job posting against a candidate profile. Return a JSON object with:
+  return getJsonResponse<{ score: number; reasoning: string }>(`Score the following job posting against a candidate profile. Return a JSON object with:
 - score: a number from 0 to 100 representing how well the candidate matches the job
 - reasoning: a brief 2-3 sentence explanation of the score
 
@@ -52,17 +26,7 @@ Job Posting:
 - Company: ${company}
 - Description: ${jobDescription.slice(0, 3000)}
 
-Return ONLY valid JSON, no markdown fences or extra text.`
-      }
-    ]
-  });
-
-  const block = message.content[0];
-  if (block.type !== "text") {
-    throw new Error("Unexpected response from AI");
-  }
-
-  return JSON.parse(stripMarkdownFences(block.text)) as { score: number; reasoning: string };
+Return ONLY valid JSON, no markdown fences or extra text.`, 1024);
 };
 
 export const analyzeUnprocessedJobs = async (): Promise<AnalyzeJobsResponse> => {

@@ -1,7 +1,20 @@
 import type { FastifyInstance } from "fastify";
 import multipart from "@fastify/multipart";
+import { extractText as extractPdfText } from "unpdf";
 
 import { getLatestProfile, uploadAndAnalyzeResume } from "../services/resume-service";
+
+const extractText = async (buffer: Buffer, filename?: string): Promise<string> => {
+  const ext = (filename ?? "").split(".").pop()?.toLowerCase();
+
+  if (ext === "pdf") {
+    const { text } = await extractPdfText(new Uint8Array(buffer), { mergePages: true });
+    return text;
+  }
+
+  // For .txt, .md and other text files
+  return buffer.toString("utf-8");
+};
 
 export const registerResumeRoutes = async (app: FastifyInstance) => {
   await app.register(multipart, {
@@ -22,12 +35,12 @@ export const registerResumeRoutes = async (app: FastifyInstance) => {
       }
 
       const buffer = await data.toBuffer();
-      const resumeText = buffer.toString("utf-8");
+      const resumeText = await extractText(buffer, data.filename);
 
       if (!resumeText.trim()) {
         return reply.status(400).send({
           status: "error",
-          message: "Resume file is empty"
+          message: "Resume file is empty or could not be parsed"
         });
       }
 

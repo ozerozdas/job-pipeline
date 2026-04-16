@@ -13,7 +13,9 @@
     "@job-pipeline/db": "workspace:*",
     "@job-pipeline/shared": "workspace:*",
     "apify-client": "^2.23.0",
-    "fastify": "^5.2.0"
+    "fastify": "^5.2.0",
+    "openai": "^4.78.0",
+    "unpdf": "^1.6.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
