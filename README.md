@@ -116,7 +116,7 @@ The Next.js app shows:
 
 ## Apify Integration
 
-The API uses the [LinkedIn Jobs Scraper](https://apify.com/hKByXkMQaC5Qt9UMN) Apify actor to fetch real job listings.
+The API uses the [LinkedIn Jobs Scraper](https://apify.com/curious_coder/linkedin-jobs-scraper) Apify actor to fetch real job listings.
 
 Set `APIFY_TOKEN` in `.env` to enable it. When the token is empty the sync endpoint falls back to the mock source.
 

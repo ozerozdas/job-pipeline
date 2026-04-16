@@ -117,6 +117,17 @@ export interface JobScoreItem {
   reasoning: string;
 }
 
+export interface CoverLetterRequest {
+  jobId: string;
+  language: string;
+}
+
+export interface CoverLetterResponse {
+  status: "success" | "no_profile" | "error";
+  message: string;
+  coverLetter?: string;
+}
+
 export const getDateKey = (date = new Date(), timeZone = "UTC") =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone,

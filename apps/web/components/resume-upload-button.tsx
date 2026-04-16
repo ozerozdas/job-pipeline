@@ -56,24 +56,25 @@ export const ResumeUploadButton = () => {
   };
 
   return (
-    <div className="flex flex-col items-start gap-2 sm:items-end">
+    <div className="flex flex-col gap-1.5">
       <input
         ref={fileInputRef}
-        accept=".txt,.md,.pdf,.doc,.docx"
+        accept=".txt,.md,.pdf"
         className="hidden"
         onChange={handleFileChange}
         type="file"
       />
       <button
-        className="rounded-full border border-accent bg-accent/10 px-5 py-3 text-sm font-semibold text-accent transition hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-70"
+        className="inline-flex items-center gap-2 rounded-xl border border-accent bg-accent/10 px-4 py-2.5 text-sm font-semibold text-accent shadow-sm transition hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-70"
         disabled={isUploading}
         onClick={handleClick}
         type="button"
       >
-        {isUploading ? "Analyzing..." : "Upload Resume & Save My Profile"}
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        {isUploading ? "Analyzing..." : "Upload Resume"}
       </button>
       {message ? (
-        <p className="max-w-xs text-right text-xs text-stone-600">{message}</p>
+        <p className="max-w-[220px] text-xs text-stone-500">{message}</p>
       ) : null}
     </div>
   );

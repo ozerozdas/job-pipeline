@@ -3,6 +3,7 @@ import Fastify from "fastify";
 
 import { env } from "./lib/env";
 import { registerAnalyzeRoutes } from "./routes/analyze";
+import { registerCoverLetterRoutes } from "./routes/cover-letter";
 import { registerJobRoutes } from "./routes/jobs";
 import { registerResumeRoutes } from "./routes/resume";
 import { registerSyncRoutes } from "./routes/sync";
@@ -24,6 +25,7 @@ const buildApp = async () => {
   await app.register(registerSyncRoutes);
   await app.register(registerResumeRoutes);
   await app.register(registerAnalyzeRoutes);
+  await app.register(registerCoverLetterRoutes);
 
   return app;
 };
