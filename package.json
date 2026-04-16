@@ -10,11 +10,13 @@
     "db:generate": "dotenv -e .env -- pnpm --filter @job-pipeline/db db:generate",
     "db:push": "dotenv -e .env -- pnpm --filter @job-pipeline/db db:push",
     "db:studio": "dotenv -e .env -- pnpm --filter @job-pipeline/db db:studio",
+    "cli": "dotenv -e .env -- node --import tsx/esm apps/cli/src/index.ts",
     "postinstall": "pnpm db:generate"
   },
   "devDependencies": {
     "dotenv-cli": "^7.4.2",
     "turbo": "^2.5.0",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
 }

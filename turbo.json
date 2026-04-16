@@ -9,7 +9,8 @@
     "WEB_ORIGIN",
     "APP_TIMEZONE",
     "APIFY_TOKEN",
-    "APIFY_ACTOR_ID"
+    "APIFY_ACTOR_ID",
+    "ANTHROPIC_API_KEY"
   ],
   "tasks": {
     "build": {
