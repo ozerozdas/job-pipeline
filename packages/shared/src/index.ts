@@ -33,6 +33,8 @@ export interface JobItem {
   jobPosterProfileUrl: string | null;
   createdAt: string;
   syncedAt: string | null;
+  score: number | null;
+  scoreReasoning: string | null;
 }
 
 export interface JobsResponse {
