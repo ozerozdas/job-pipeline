@@ -80,6 +80,41 @@ export interface SyncResponse {
   date: string;
 }
 
+export interface ResumeAnalysis {
+  summary: string;
+  skills: string[];
+  experienceYears: number;
+  seniorityLevel: string;
+  preferredRoles: string[];
+  industries: string[];
+  education: string[];
+}
+
+export interface ResumeProfileResponse {
+  id: string;
+  fileName: string | null;
+  analysis: ResumeAnalysis;
+  createdAt: string;
+}
+
+export interface ResumeUploadResponse {
+  status: "success";
+  message: string;
+  profile: ResumeProfileResponse;
+}
+
+export interface AnalyzeJobsResponse {
+  status: "success" | "no_profile" | "no_jobs";
+  message: string;
+  processedCount: number;
+}
+
+export interface JobScoreItem {
+  jobId: string;
+  score: number;
+  reasoning: string;
+}
+
 export const getDateKey = (date = new Date(), timeZone = "UTC") =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone,

@@ -45,6 +45,7 @@ model Job {
   jobPosterProfileUrl String?
   createdAt          DateTime @default(now())
   syncedAt           DateTime?
+  scores             JobScore[]
 }
 
 model SyncLog {
@@ -52,4 +53,27 @@ model SyncLog {
   date      DateTime   @unique @db.Date
   status    SyncStatus
   createdAt DateTime   @default(now())
+}
+
+model ResumeProfile {
+  id        String     @id @default(uuid())
+  fileName  String?
+  rawText   String     @db.Text
+  analysis  String     @db.Text
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  scores    JobScore[]
+}
+
+model JobScore {
+  id              String        @id @default(uuid())
+  jobId           String
+  resumeProfileId String
+  score           Float
+  reasoning       String        @db.Text
+  createdAt       DateTime      @default(now())
+  job             Job           @relation(fields: [jobId], references: [id])
+  resumeProfile   ResumeProfile @relation(fields: [resumeProfileId], references: [id])
+
+  @@unique([jobId, resumeProfileId])
 }

@@ -1,6 +1,8 @@
 import type { JobItem } from "@job-pipeline/shared";
 
+import { AnalyzeJobsButton } from "../components/analyze-jobs-button";
 import { JobsTable } from "../components/jobs-table";
+import { ResumeUploadButton } from "../components/resume-upload-button";
 import { SyncButton } from "../components/sync-button";
 import { getJobs } from "../lib/api";
 
@@ -35,7 +37,11 @@ export default async function DashboardPage() {
               </p>
             </div>
           </div>
-          <SyncButton />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+            <ResumeUploadButton />
+            <AnalyzeJobsButton />
+            <SyncButton />
+          </div>
         </div>
       </section>
 

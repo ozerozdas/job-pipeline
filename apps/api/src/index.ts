@@ -2,7 +2,9 @@ import cors from "@fastify/cors";
 import Fastify from "fastify";
 
 import { env } from "./lib/env";
+import { registerAnalyzeRoutes } from "./routes/analyze";
 import { registerJobRoutes } from "./routes/jobs";
+import { registerResumeRoutes } from "./routes/resume";
 import { registerSyncRoutes } from "./routes/sync";
 
 const buildApp = async () => {
@@ -20,6 +22,8 @@ const buildApp = async () => {
 
   await app.register(registerJobRoutes);
   await app.register(registerSyncRoutes);
+  await app.register(registerResumeRoutes);
+  await app.register(registerAnalyzeRoutes);
 
   return app;
 };
