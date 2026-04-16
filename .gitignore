@@ -1,0 +1,8 @@
+node_modules
+.turbo
+.next
+dist
+coverage
+.DS_Store
+*.log
+packages/db/generated

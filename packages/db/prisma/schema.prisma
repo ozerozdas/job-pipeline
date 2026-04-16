@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SyncStatus {
+  SUCCESS @map("success")
+  FAILED  @map("failed")
+}
+
+model Job {
+  id                 String   @id @default(uuid())
+  externalId         String?
+  title              String
+  company            String
+  companyLinkedinUrl  String?
+  companyLogo        String?
+  location           String
+  url                String   @unique
+  description        String   @db.Text
+  descriptionHtml    String?  @db.Text
+  source             String
+  postedAt           DateTime?
+  benefits           String[] @default([])
+  applicantsCount    String?
+  applyUrl           String?
+  salary             String?
+  seniorityLevel     String?
+  employmentType     String?
+  jobFunction        String?
+  industries         String?
+  applyMethod        String?
+  expireAt           DateTime?
+  workplaceTypes     String[] @default([])
+  workRemoteAllowed  Boolean?
+  standardizedTitle  String?
+  country            String?
+  jobPosterName      String?
+  jobPosterTitle     String?
+  jobPosterPhoto     String?
+  jobPosterProfileUrl String?
+  createdAt          DateTime @default(now())
+  syncedAt           DateTime?
+}
+
+model SyncLog {
+  id        String     @id @default(uuid())
+  date      DateTime   @unique @db.Date
+  status    SyncStatus
+  createdAt DateTime   @default(now())
+}
