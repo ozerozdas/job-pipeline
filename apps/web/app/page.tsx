@@ -25,6 +25,12 @@ export default async function DashboardPage() {
   const hasJobs = jobs.length > 0;
   const hasUnscored = jobs.some((j) => j.score === null);
 
+  const today = new Date().toDateString();
+  const syncedToday = jobs.filter((j) => new Date(j.createdAt).toDateString() === today).length;
+  const highMatch = jobs.filter((j) => j.score !== null && j.score >= 75).length;
+  const appliedTotal = jobs.filter((j) => j.applied).length;
+  const notApplied = jobs.filter((j) => !j.applied && j.score !== null && j.score >= 50).length;
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
@@ -42,6 +48,27 @@ export default async function DashboardPage() {
             </p>
           </div>
         </div>
+
+        {hasJobs && (
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-2xl border border-line/60 bg-surface/60 px-4 py-3 text-center">
+              <p className="text-2xl font-semibold text-ink">{syncedToday}</p>
+              <p className="text-xs text-stone-500">Synced Today</p>
+            </div>
+            <div className="rounded-2xl border border-line/60 bg-surface/60 px-4 py-3 text-center">
+              <p className="text-2xl font-semibold text-emerald-600">{highMatch}</p>
+              <p className="text-xs text-stone-500">High Match</p>
+            </div>
+            <div className="rounded-2xl border border-line/60 bg-surface/60 px-4 py-3 text-center">
+              <p className="text-2xl font-semibold text-amber-600">{notApplied}</p>
+              <p className="text-xs text-stone-500">Not Applied</p>
+            </div>
+            <div className="rounded-2xl border border-line/60 bg-surface/60 px-4 py-3 text-center">
+              <p className="text-2xl font-semibold text-blue-600">{appliedTotal}</p>
+              <p className="text-xs text-stone-500">Applied</p>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Action bar */}
