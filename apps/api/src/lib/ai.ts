@@ -95,3 +95,26 @@ export const getJsonResponse = async <T>(prompt: string, maxTokens = 2048): Prom
   const text = await callOpenAI(prompt, maxTokens);
   return JSON.parse(stripMarkdownFences(text)) as T;
 };
+
+export const getTextResponse = async (prompt: string, maxTokens = 2048): Promise<string> => {
+  const hasAnthropic = !!env.anthropicApiKey;
+  const hasOpenAI = !!env.openaiApiKey;
+
+  if (!hasAnthropic && !hasOpenAI) {
+    throw new Error("No AI provider configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY.");
+  }
+
+  if (hasAnthropic) {
+    try {
+      return await callAnthropic(prompt, maxTokens);
+    } catch (error) {
+      if (isRateLimitError(error) && hasOpenAI) {
+        console.log("Anthropic rate limited, falling back to OpenAI");
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  return await callOpenAI(prompt, maxTokens);
+};

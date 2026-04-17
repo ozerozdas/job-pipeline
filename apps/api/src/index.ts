@@ -4,6 +4,7 @@ import Fastify from "fastify";
 import { env } from "./lib/env";
 import { registerAnalyzeRoutes } from "./routes/analyze";
 import { registerCoverLetterRoutes } from "./routes/cover-letter";
+import { registerJobChatRoutes } from "./routes/job-chat";
 import { registerJobRoutes } from "./routes/jobs";
 import { registerResumeRoutes } from "./routes/resume";
 import { registerSearchUrlRoutes } from "./routes/search-urls";
@@ -27,6 +28,7 @@ const buildApp = async () => {
   await app.register(registerResumeRoutes);
   await app.register(registerAnalyzeRoutes);
   await app.register(registerCoverLetterRoutes);
+  await app.register(registerJobChatRoutes);
   await app.register(registerSearchUrlRoutes);
 
   return app;

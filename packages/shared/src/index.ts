@@ -141,6 +141,22 @@ export interface CoverLetterResponse {
   coverLetter?: string;
 }
 
+export interface JobChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface JobChatRequest {
+  jobId: string;
+  messages: JobChatMessage[];
+}
+
+export interface JobChatResponse {
+  status: "success" | "no_profile" | "error";
+  message: string;
+  reply?: string;
+}
+
 export const getDateKey = (date = new Date(), timeZone = "UTC") =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone,

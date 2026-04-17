@@ -35,11 +35,8 @@ export default async function DashboardPage() {
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
       <section className="rounded-[28px] border border-white/70 bg-panel/90 p-6 shadow-card backdrop-blur sm:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl space-y-2">
-            <span className="inline-flex rounded-full border border-accent/30 bg-accent/10 px-3 py-1 font-mono text-xs uppercase tracking-[0.24em] text-accent">
-              Pipeline
-            </span>
             <h1 className="text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
               Job Aggregation Dashboard
             </h1>
@@ -47,6 +44,9 @@ export default async function DashboardPage() {
               Sync jobs, upload your resume for AI scoring, and generate tailored cover letters.
             </p>
           </div>
+          <span className="inline-flex rounded-full border border-accent/30 bg-accent/10 px-3 py-1 font-mono text-xs uppercase tracking-[0.24em] text-accent">
+            Pipeline
+          </span>
         </div>
 
         {hasJobs && (

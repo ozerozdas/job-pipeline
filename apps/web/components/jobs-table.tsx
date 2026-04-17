@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { getClientApiBaseUrl } from "../lib/api";
 import { formatDateTime } from "../lib/date";
 import { CoverLetterButton } from "./cover-letter-button";
+import { JobActionsDropdown } from "./job-actions-dropdown";
+import { JobChatModal } from "./job-chat-modal";
 import { JobDetailModal } from "./job-detail-modal";
 
 type ColumnKey = "score" | "title" | "company" | "location" | "type" | "seniority" | "posted" | "applied" | "actions";
@@ -33,6 +35,8 @@ export const JobsTable = ({
 }) => {
   const [jobs, setJobs] = useState(initialJobs);
   const [selectedJob, setSelectedJob] = useState<JobItem | null>(null);
+  const [chatJob, setChatJob] = useState<JobItem | null>(null);
+  const [coverLetterJob, setCoverLetterJob] = useState<JobItem | null>(null);
   const [showHidden, setShowHidden] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(new Set(DEFAULT_VISIBLE));
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
@@ -223,7 +227,10 @@ export const JobsTable = ({
               )}
               {hasProfile && show("actions") ? (
                 <td className="px-4 py-3">
-                  <CoverLetterButton jobId={job.id} />
+                  <JobActionsDropdown
+                    onCoverLetter={() => setCoverLetterJob(job)}
+                    onChat={() => setChatJob(job)}
+                  />
                 </td>
               ) : null}
             </tr>
@@ -244,6 +251,10 @@ export const JobsTable = ({
       )}
 
       <JobDetailModal job={selectedJob} onClose={() => setSelectedJob(null)} />
+      <JobChatModal job={chatJob} onClose={() => setChatJob(null)} />
+      {coverLetterJob && (
+        <CoverLetterButton jobId={coverLetterJob.id} onClose={() => setCoverLetterJob(null)} />
+      )}
     </>
   );
 };
