@@ -40,7 +40,7 @@ const client = new ApifyClient({ token: env.apifyToken });
 
 export const fetchApifyJobs = async (
   urls: string[],
-  count = 10
+  count = 100
 ): Promise<ExternalJobListing[]> => {
   const run = await client.actor(env.apifyActorId).call({
     urls: urls.map((url) => url),
