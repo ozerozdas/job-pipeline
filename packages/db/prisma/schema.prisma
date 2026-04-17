@@ -43,6 +43,7 @@ model Job {
   jobPosterTitle     String?
   jobPosterPhoto     String?
   jobPosterProfileUrl String?
+  applied            Boolean  @default(false)
   createdAt          DateTime @default(now())
   syncedAt           DateTime?
   scores             JobScore[]

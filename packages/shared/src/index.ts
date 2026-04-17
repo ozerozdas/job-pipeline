@@ -31,6 +31,7 @@ export interface JobItem {
   jobPosterTitle: string | null;
   jobPosterPhoto: string | null;
   jobPosterProfileUrl: string | null;
+  applied: boolean;
   createdAt: string;
   syncedAt: string | null;
   score: number | null;

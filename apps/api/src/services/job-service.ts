@@ -38,6 +38,7 @@ const serializeJob = (job: JobWithScores): JobItem => {
     jobPosterTitle: job.jobPosterTitle,
     jobPosterPhoto: job.jobPosterPhoto,
     jobPosterProfileUrl: job.jobPosterProfileUrl,
+    applied: job.applied,
     createdAt: job.createdAt.toISOString(),
     syncedAt: job.syncedAt?.toISOString() ?? null,
     score: latestScore?.score ?? null,
@@ -67,4 +68,18 @@ export const getAllJobs = async (): Promise<JobItem[]> => {
     if (b.score !== null) return 1;
     return 0;
   });
+};
+
+export const toggleJobApplied = async (id: string, applied: boolean): Promise<JobItem> => {
+  const job = await prisma.job.update({
+    where: { id },
+    data: { applied },
+    include: {
+      scores: {
+        orderBy: { createdAt: "desc" },
+        take: 1
+      }
+    }
+  });
+  return serializeJob(job);
 };
