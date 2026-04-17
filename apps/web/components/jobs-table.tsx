@@ -17,6 +17,12 @@ export const JobsTable = ({
 }) => {
   const [jobs, setJobs] = useState(initialJobs);
   const [selectedJob, setSelectedJob] = useState<JobItem | null>(null);
+  const [showHidden, setShowHidden] = useState(false);
+
+  const hiddenCount = jobs.filter((j) => j.score !== null && j.score < 50).length;
+  const visibleJobs = showHidden
+    ? jobs
+    : jobs.filter((j) => j.score === null || j.score >= 50);
 
   const handleToggleApplied = async (e: React.MouseEvent, jobId: string, applied: boolean) => {
     e.stopPropagation();
@@ -80,7 +86,7 @@ export const JobsTable = ({
           </tr>
         </thead>
         <tbody>
-          {jobs.map((job) => (
+          {visibleJobs.map((job) => (
             <tr
               className="cursor-pointer border-t border-line/70 transition hover:bg-accent/5"
               key={job.id}
@@ -139,6 +145,18 @@ export const JobsTable = ({
           ))}
         </tbody>
       </table>
+
+      {hiddenCount > 0 && (
+        <button
+          className="mt-2 w-full py-2 text-center text-sm text-stone-400 hover:text-stone-600 transition-colors"
+          onClick={() => setShowHidden((v) => !v)}
+          type="button"
+        >
+          {showHidden
+            ? `Hide ${hiddenCount} low-score job${hiddenCount === 1 ? "" : "s"}`
+            : `Show ${hiddenCount} hidden job${hiddenCount === 1 ? "" : "s"} (score < 50)`}
+        </button>
+      )}
 
       <JobDetailModal job={selectedJob} onClose={() => setSelectedJob(null)} />
     </>
