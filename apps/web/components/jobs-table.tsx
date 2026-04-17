@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { getClientApiBaseUrl } from "../lib/api";
 import { formatDateTime } from "../lib/date";
+import { AppliedToast } from "./applied-toast";
 import { CoverLetterButton } from "./cover-letter-button";
 import { JobActionsDropdown } from "./job-actions-dropdown";
 import { JobChatModal } from "./job-chat-modal";
@@ -25,6 +26,7 @@ const ALL_COLUMNS: { key: ColumnKey; label: string; requiresProfile?: boolean }[
 ];
 
 const DEFAULT_VISIBLE: ColumnKey[] = ["score", "title", "company", "location", "type", "seniority", "posted", "applied", "actions"];
+type ModalView = "detail" | "chat" | "cover-letter" | null;
 
 export const JobsTable = ({
   jobs: initialJobs,
@@ -34,9 +36,9 @@ export const JobsTable = ({
   hasProfile: boolean;
 }) => {
   const [jobs, setJobs] = useState(initialJobs);
-  const [selectedJob, setSelectedJob] = useState<JobItem | null>(null);
-  const [chatJob, setChatJob] = useState<JobItem | null>(null);
-  const [coverLetterJob, setCoverLetterJob] = useState<JobItem | null>(null);
+  const [activeJob, setActiveJob] = useState<JobItem | null>(null);
+  const [activeModal, setActiveModal] = useState<ModalView>(null);
+  const [toastJob, setToastJob] = useState<JobItem | null>(null);
   const [showHidden, setShowHidden] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(new Set(DEFAULT_VISIBLE));
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
@@ -70,19 +72,56 @@ export const JobsTable = ({
     ? jobs
     : jobs.filter((j) => j.score === null || j.score >= 50);
 
-  const handleToggleApplied = async (e: React.MouseEvent, jobId: string, applied: boolean) => {
-    e.stopPropagation();
-    const prev = jobs;
-    setJobs((curr) => curr.map((j) => (j.id === jobId ? { ...j, applied } : j)));
+  const updateModalJob = (job: JobItem | null, jobId: string, applied: boolean) =>
+    job && job.id === jobId ? { ...job, applied } : job;
+
+  const persistAppliedState = async (jobId: string, applied: boolean) => {
+    const previousJobs = jobs;
+    const previousActiveJob = activeJob;
+    const previousToastJob = toastJob;
+
+    setJobs((currentJobs) => currentJobs.map((job) => (job.id === jobId ? { ...job, applied } : job)));
+    setActiveJob((currentJob) => updateModalJob(currentJob, jobId, applied));
+    setToastJob((currentJob) => updateModalJob(currentJob, jobId, applied));
+
     try {
-      await fetch(`${getClientApiBaseUrl()}/jobs/${jobId}/applied`, {
+      const response = await fetch(`${getClientApiBaseUrl()}/jobs/${jobId}/applied`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ applied })
       });
+
+      if (!response.ok) {
+        throw new Error("Failed to update applied status");
+      }
     } catch {
-      setJobs(prev);
+      setJobs(previousJobs);
+      setActiveJob(previousActiveJob);
+      setToastJob(previousToastJob);
     }
+  };
+
+  const openJobModal = (job: JobItem, view: Exclude<ModalView, null>) => {
+    setToastJob(null);
+    setActiveJob(job);
+    setActiveModal(view);
+  };
+
+  const handleCloseModal = (job: JobItem | null) => {
+    if (!job) {
+      setActiveModal(null);
+      setActiveJob(null);
+      return;
+    }
+
+    setActiveModal(null);
+    setActiveJob(null);
+    setToastJob(job.applied ? null : job);
+  };
+
+  const handleToggleApplied = async (e: React.MouseEvent, jobId: string, applied: boolean) => {
+    e.stopPropagation();
+    await persistAppliedState(jobId, applied);
   };
 
   const columnPicker = (
@@ -173,7 +212,7 @@ export const JobsTable = ({
             <tr
               className="cursor-pointer border-t border-line/70 transition hover:bg-accent/5"
               key={job.id}
-              onClick={() => setSelectedJob(job)}
+              onClick={() => openJobModal(job, "detail")}
             >
               {show("score") && (
                 <td className="px-4 py-3">
@@ -228,8 +267,8 @@ export const JobsTable = ({
               {hasProfile && show("actions") ? (
                 <td className="px-4 py-3">
                   <JobActionsDropdown
-                    onCoverLetter={() => setCoverLetterJob(job)}
-                    onChat={() => setChatJob(job)}
+                    onCoverLetter={() => openJobModal(job, "cover-letter")}
+                    onChat={() => openJobModal(job, "chat")}
                   />
                 </td>
               ) : null}
@@ -250,11 +289,33 @@ export const JobsTable = ({
         </button>
       )}
 
-      <JobDetailModal job={selectedJob} onClose={() => setSelectedJob(null)} />
-      <JobChatModal job={chatJob} onClose={() => setChatJob(null)} />
-      {coverLetterJob && (
-        <CoverLetterButton jobId={coverLetterJob.id} onClose={() => setCoverLetterJob(null)} />
+      <JobDetailModal
+        job={activeModal === "detail" ? activeJob : null}
+        onChat={hasProfile && activeJob ? () => openJobModal(activeJob, "chat") : undefined}
+        onClose={() => handleCloseModal(activeJob)}
+        onCoverLetter={hasProfile && activeJob ? () => openJobModal(activeJob, "cover-letter") : undefined}
+      />
+      <JobChatModal
+        job={activeModal === "chat" ? activeJob : null}
+        onBack={activeJob ? () => setActiveModal("detail") : undefined}
+        onClose={() => handleCloseModal(activeJob)}
+      />
+      {activeModal === "cover-letter" && activeJob && (
+        <CoverLetterButton
+          jobId={activeJob.id}
+          onBack={() => setActiveModal("detail")}
+          onClose={() => handleCloseModal(activeJob)}
+        />
       )}
+      <AppliedToast
+        job={toastJob}
+        onConfirm={() => {
+          if (!toastJob) return;
+          void persistAppliedState(toastJob.id, true);
+          setToastJob(null);
+        }}
+        onDismiss={() => setToastJob(null)}
+      />
     </>
   );
 };

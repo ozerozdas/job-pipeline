@@ -16,10 +16,11 @@ const LANGUAGES = [
 
 interface CoverLetterButtonProps {
   jobId: string;
+  onBack?: () => void;
   onClose: () => void;
 }
 
-export const CoverLetterButton = ({ jobId, onClose }: CoverLetterButtonProps) => {
+export const CoverLetterButton = ({ jobId, onBack, onClose }: CoverLetterButtonProps) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [coverLetter, setCoverLetter] = useState<string | null>(null);
@@ -83,7 +84,21 @@ export const CoverLetterButton = ({ jobId, onClose }: CoverLetterButtonProps) =>
       <div className="relative mx-4 flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-[24px] border border-white/70 bg-panel shadow-card">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-line/80 px-6 py-4">
-          <h2 className="text-base font-semibold text-ink">Cover Letter</h2>
+          <div className="flex items-center gap-3">
+            {onBack && (
+              <button
+                className="flex h-8 w-8 items-center justify-center rounded-full text-stone-400 transition hover:bg-stone-100 hover:text-stone-600"
+                onClick={onBack}
+                type="button"
+                aria-label="Back to job details"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+              </button>
+            )}
+            <h2 className="text-base font-semibold text-ink">Cover Letter</h2>
+          </div>
           <button
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-full text-stone-400 transition hover:bg-stone-100 hover:text-stone-600"

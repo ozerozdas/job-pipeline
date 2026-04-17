@@ -8,6 +8,8 @@ import { formatDateTime } from "../lib/date";
 interface JobDetailModalProps {
   job: JobItem | null;
   onClose: () => void;
+  onChat?: () => void;
+  onCoverLetter?: () => void;
 }
 
 const Detail = ({ label, value }: { label: string; value: React.ReactNode }) => {
@@ -26,7 +28,7 @@ const Badge = ({ children }: { children: React.ReactNode }) => (
   </span>
 );
 
-export const JobDetailModal = ({ job, onClose }: JobDetailModalProps) => {
+export const JobDetailModal = ({ job, onClose, onChat, onCoverLetter }: JobDetailModalProps) => {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -156,25 +158,48 @@ export const JobDetailModal = ({ job, onClose }: JobDetailModalProps) => {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-line/80 px-6 py-4">
-          {job.applyUrl && (
+        <div className="flex flex-col gap-3 border-t border-line/80 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {onChat && (
+              <button
+                className="rounded-full border border-stone-200 px-4 py-2 text-sm font-medium text-stone-600 transition hover:bg-stone-50"
+                onClick={onChat}
+                type="button"
+              >
+                Open Chat
+              </button>
+            )}
+            {onCoverLetter && (
+              <button
+                className="rounded-full border border-stone-200 px-4 py-2 text-sm font-medium text-stone-600 transition hover:bg-stone-50"
+                onClick={onCoverLetter}
+                type="button"
+              >
+                Cover Letter
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            {job.applyUrl && (
+              <a
+                href={job.applyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent/90"
+              >
+                Apply
+              </a>
+            )}
             <a
-              href={job.applyUrl}
+              href={job.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent/90"
+              className="rounded-full border border-stone-200 px-4 py-2 text-sm font-medium text-stone-600 transition hover:bg-stone-50"
             >
-              Apply
+              View on LinkedIn
             </a>
-          )}
-          <a
-            href={job.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full border border-stone-200 px-4 py-2 text-sm font-medium text-stone-600 transition hover:bg-stone-50"
-          >
-            View on LinkedIn
-          </a>
+          </div>
         </div>
       </div>
     </div>

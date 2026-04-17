@@ -7,10 +7,11 @@ import { getClientApiBaseUrl } from "../lib/api";
 
 interface JobChatModalProps {
   job: JobItem | null;
+  onBack?: () => void;
   onClose: () => void;
 }
 
-export const JobChatModal = ({ job, onClose }: JobChatModalProps) => {
+export const JobChatModal = ({ job, onBack, onClose }: JobChatModalProps) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -102,11 +103,25 @@ export const JobChatModal = ({ job, onClose }: JobChatModalProps) => {
       <div className="relative mx-4 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-[24px] border border-white/70 bg-panel shadow-card">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 border-b border-line/80 px-6 py-4">
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-start gap-3">
+            {onBack && (
+              <button
+                className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-stone-400 transition hover:bg-stone-100 hover:text-stone-600"
+                onClick={onBack}
+                type="button"
+                aria-label="Back to job details"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+              </button>
+            )}
+            <div className="min-w-0">
             <h2 className="text-base font-semibold text-ink">Chat about this job</h2>
             <p className="mt-0.5 truncate text-sm text-stone-500">
               {job.title} at {job.company}
             </p>
+          </div>
           </div>
           <button
             onClick={onClose}
