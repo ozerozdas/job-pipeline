@@ -24,7 +24,7 @@ export const AppliedToast = ({ job, onConfirm, onDismiss }: AppliedToastProps) =
 
   return (
     <div className="pointer-events-none fixed bottom-4 right-4 z-[60] max-w-sm sm:bottom-6 sm:right-6">
-      <div className="pointer-events-auto overflow-hidden rounded-[22px] border border-white/70 bg-panel/95 shadow-card backdrop-blur">
+      <div className="pointer-events-auto overflow-hidden rounded-[22px] border border-white/70 bg-panel/95 shadow-card backdrop-blur shadow-xl">
         <div className="px-4 py-3">
           <p className="text-sm font-semibold text-ink">Did you apply?</p>
           <p className="mt-1 text-sm text-stone-500">
