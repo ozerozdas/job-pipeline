@@ -1,4 +1,4 @@
-import type { JobItem } from "@job-pipeline/shared";
+import type { JobAppliedFilter, JobMatchFilter, JobsResponse } from "@job-pipeline/shared";
 
 import { AnalyzeJobsButton } from "../components/analyze-jobs-button";
 import { JobsTable } from "../components/jobs-table";
@@ -9,27 +9,74 @@ import { getJobs, getResumeProfile } from "../lib/api";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
-  let jobs: JobItem[] = [];
+const DEFAULT_PAGE_SIZE = 25;
+
+type DashboardPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+const readSearchParam = (
+  searchParams: Record<string, string | string[] | undefined>,
+  key: string
+) => {
+  const value = searchParams[key];
+  return Array.isArray(value) ? value[0] : value;
+};
+
+const readPositiveNumber = (value?: string) => {
+  if (!value) return undefined;
+  const parsedValue = Number(value);
+  if (!Number.isFinite(parsedValue) || parsedValue < 1) return undefined;
+  return Math.floor(parsedValue);
+};
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const page = readPositiveNumber(readSearchParam(resolvedSearchParams, "page")) ?? 1;
+  const query = readSearchParam(resolvedSearchParams, "query") ?? "";
+  const applied = (readSearchParam(resolvedSearchParams, "applied") as JobAppliedFilter | undefined) ?? "all";
+  const match = (readSearchParam(resolvedSearchParams, "match") as JobMatchFilter | undefined) ?? "all";
+
+  let jobsResponse: JobsResponse = {
+    jobs: [],
+    pagination: {
+      page: 1,
+      pageSize: DEFAULT_PAGE_SIZE,
+      total: 0,
+      totalPages: 1
+    },
+    summary: {
+      total: 0,
+      syncedToday: 0,
+      highMatch: 0,
+      appliedTotal: 0,
+      recommendedNotApplied: 0,
+      scoredTotal: 0
+    }
+  };
   let loadError: string | null = null;
   let hasProfile = false;
 
   try {
-    const [jobsResponse, profile] = await Promise.all([getJobs(), getResumeProfile()]);
-    jobs = jobsResponse.jobs;
+    const [jobsData, profile] = await Promise.all([
+      getJobs({
+        page,
+        pageSize: DEFAULT_PAGE_SIZE,
+        query,
+        applied,
+        match
+      }),
+      getResumeProfile()
+    ]);
+    jobsResponse = jobsData;
     hasProfile = !!profile;
   } catch (_error) {
     loadError = "The dashboard could not reach the API. Start the API and refresh the page.";
   }
 
-  const hasJobs = jobs.length > 0;
-  const hasUnscored = jobs.some((j) => j.score === null);
-
-  const today = new Date().toDateString();
-  const syncedToday = jobs.filter((j) => new Date(j.createdAt).toDateString() === today).length;
-  const highMatch = jobs.filter((j) => j.score !== null && j.score >= 75).length;
-  const appliedTotal = jobs.filter((j) => j.applied).length;
-  const notApplied = jobs.filter((j) => !j.applied && j.score !== null && j.score >= 50).length;
+  const { jobs, pagination, summary } = jobsResponse;
+  const hasJobs = summary.total > 0;
+  const hasUnscored = summary.scoredTotal < summary.total;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -52,19 +99,19 @@ export default async function DashboardPage() {
         {hasJobs && (
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-2xl border border-line/60 bg-surface/60 px-4 py-3 text-center">
-              <p className="text-2xl font-semibold text-ink">{syncedToday}</p>
+              <p className="text-2xl font-semibold text-ink">{summary.syncedToday}</p>
               <p className="text-xs text-stone-500">Synced Today</p>
             </div>
             <div className="rounded-2xl border border-line/60 bg-surface/60 px-4 py-3 text-center">
-              <p className="text-2xl font-semibold text-emerald-600">{highMatch}</p>
+              <p className="text-2xl font-semibold text-emerald-600">{summary.highMatch}</p>
               <p className="text-xs text-stone-500">High Match</p>
             </div>
             <div className="rounded-2xl border border-line/60 bg-surface/60 px-4 py-3 text-center">
-              <p className="text-2xl font-semibold text-amber-600">{notApplied}</p>
+              <p className="text-2xl font-semibold text-amber-600">{summary.recommendedNotApplied}</p>
               <p className="text-xs text-stone-500">Not Applied</p>
             </div>
             <div className="rounded-2xl border border-line/60 bg-surface/60 px-4 py-3 text-center">
-              <p className="text-2xl font-semibold text-blue-600">{appliedTotal}</p>
+              <p className="text-2xl font-semibold text-blue-600">{summary.appliedTotal}</p>
               <p className="text-xs text-stone-500">Applied</p>
             </div>
           </div>
@@ -107,19 +154,27 @@ export default async function DashboardPage() {
               <h2 className="text-lg font-semibold text-ink">Jobs</h2>
               <p className="text-sm text-stone-500">
                 {hasJobs
-                  ? `${jobs.length} listings — sorted by match score, then most recent.`
+                  ? `${summary.total} canonical listings — sorted by match score, then recent sync activity.`
                   : "No jobs synced yet. Use the sync button above."}
               </p>
             </div>
             {hasJobs ? (
               <span className="hidden rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600 sm:inline-flex">
-                {jobs.filter((j) => j.score !== null).length} / {jobs.length} scored
+                {summary.scoredTotal} / {summary.total} scored
               </span>
             ) : null}
           </div>
         </div>
         <div className="overflow-x-auto">
-          <JobsTable jobs={jobs} hasProfile={hasProfile} />
+          <JobsTable
+            appliedFilter={applied}
+            hasProfile={hasProfile}
+            jobs={jobs}
+            matchFilter={match}
+            pagination={pagination}
+            query={query}
+            summary={summary}
+          />
         </div>
       </section>
     </main>

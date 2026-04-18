@@ -2,6 +2,7 @@ import { prisma } from "@job-pipeline/db";
 import type { AnalyzeJobsResponse, JobScoreItem, ResumeAnalysis } from "@job-pipeline/shared";
 
 import { getJsonResponse } from "../lib/ai";
+import { groupJobsByIdentity, selectPreferredJob } from "./job-identity";
 
 const scoreJob = async (
   jobTitle: string,
@@ -44,15 +45,21 @@ export const analyzeUnprocessedJobs = async (): Promise<AnalyzeJobsResponse> => 
 
   const analysis = JSON.parse(latestProfile.analysis) as ResumeAnalysis;
 
-  const unprocessedJobs = await prisma.job.findMany({
-    where: {
+  const jobs = await prisma.job.findMany({
+    include: {
       scores: {
-        none: {
+        where: {
           resumeProfileId: latestProfile.id
-        }
+        },
+        orderBy: { createdAt: "desc" },
+        take: 1
       }
     }
   });
+
+  const unprocessedJobs = groupJobsByIdentity(jobs)
+    .filter((group) => group.every((job) => job.scores.length === 0))
+    .map((group) => selectPreferredJob(group));
 
   if (unprocessedJobs.length === 0) {
     return {

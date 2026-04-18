@@ -3,12 +3,24 @@ import type { FastifyInstance } from "fastify";
 import { getAllJobs, toggleJobApplied } from "../services/job-service";
 
 export const registerJobRoutes = async (app: FastifyInstance) => {
-  app.get("/jobs", async () => {
-    const jobs = await getAllJobs();
-
-    return {
-      jobs
+  app.get<{
+    Querystring: {
+      page?: string;
+      pageSize?: string;
+      query?: string;
+      applied?: "all" | "applied" | "not-applied";
+      match?: "all" | "high" | "good" | "low" | "unscored";
     };
+  }>("/jobs", async (request) => {
+    const jobs = await getAllJobs({
+      page: request.query.page ? Number(request.query.page) : undefined,
+      pageSize: request.query.pageSize ? Number(request.query.pageSize) : undefined,
+      query: request.query.query,
+      applied: request.query.applied,
+      match: request.query.match
+    });
+
+    return jobs;
   });
 
   app.patch<{

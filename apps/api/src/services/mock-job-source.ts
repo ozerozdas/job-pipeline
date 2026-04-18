@@ -57,15 +57,16 @@ const baseListings = [
   }
 ] as const;
 
-export const fetchMockJobs = async (dateKey: string): Promise<ExternalJobListing[]> => {
+export const fetchMockJobs = async (_dateKey: string): Promise<ExternalJobListing[]> => {
   await new Promise((resolve) => setTimeout(resolve, 250));
 
   return baseListings.map((listing) => ({
+    externalId: `mock:${listing.slug}`,
     title: listing.title,
     company: listing.company,
     location: listing.location,
     source: listing.source,
     description: listing.description,
-    url: `https://jobs.example.com/${dateKey}/${listing.slug}`
+    url: `https://jobs.example.com/mock-listings/${listing.slug}`
   }));
 };

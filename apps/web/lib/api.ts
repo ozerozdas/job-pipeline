@@ -1,9 +1,17 @@
-import type { JobsResponse, ResumeProfileResponse, SearchUrlsResponse } from "@job-pipeline/shared";
+import type { JobsQueryParams, JobsResponse, ResumeProfileResponse, SearchUrlsResponse } from "@job-pipeline/shared";
 
 const apiBaseUrl = process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
 
-export const getJobs = async (): Promise<JobsResponse> => {
-  const response = await fetch(`${apiBaseUrl}/jobs`, {
+export const getJobs = async (params: JobsQueryParams = {}): Promise<JobsResponse> => {
+  const searchParams = new URLSearchParams();
+
+  if (params.page) searchParams.set("page", String(params.page));
+  if (params.pageSize) searchParams.set("pageSize", String(params.pageSize));
+  if (params.query?.trim()) searchParams.set("query", params.query.trim());
+  if (params.applied && params.applied !== "all") searchParams.set("applied", params.applied);
+  if (params.match && params.match !== "all") searchParams.set("match", params.match);
+
+  const response = await fetch(`${apiBaseUrl}/jobs${searchParams.size > 0 ? `?${searchParams.toString()}` : ""}`, {
     cache: "no-store"
   });
 

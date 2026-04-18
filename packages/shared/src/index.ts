@@ -38,8 +38,38 @@ export interface JobItem {
   scoreReasoning: string | null;
 }
 
+export type JobAppliedFilter = "all" | "applied" | "not-applied";
+
+export type JobMatchFilter = "all" | "high" | "good" | "low" | "unscored";
+
+export interface JobsQueryParams {
+  page?: number;
+  pageSize?: number;
+  query?: string;
+  applied?: JobAppliedFilter;
+  match?: JobMatchFilter;
+}
+
+export interface JobsPagination {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface JobsSummary {
+  total: number;
+  syncedToday: number;
+  highMatch: number;
+  appliedTotal: number;
+  recommendedNotApplied: number;
+  scoredTotal: number;
+}
+
 export interface JobsResponse {
   jobs: JobItem[];
+  pagination: JobsPagination;
+  summary: JobsSummary;
 }
 
 export interface ExternalJobListing {

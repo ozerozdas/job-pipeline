@@ -1,7 +1,8 @@
 "use client";
 
-import type { JobItem } from "@job-pipeline/shared";
-import { useEffect, useRef, useState } from "react";
+import type { JobAppliedFilter, JobItem, JobMatchFilter, JobsPagination, JobsSummary } from "@job-pipeline/shared";
+import { useDeferredValue, useEffect, useRef, useState, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { getClientApiBaseUrl } from "../lib/api";
 import { formatDateTime } from "../lib/date";
@@ -12,8 +13,6 @@ import { JobChatModal } from "./job-chat-modal";
 import { JobDetailModal } from "./job-detail-modal";
 
 type ColumnKey = "score" | "title" | "company" | "location" | "type" | "seniority" | "posted" | "applied" | "actions";
-type AppliedFilter = "all" | "applied" | "not-applied";
-type MatchFilter = "all" | "high" | "good" | "low" | "unscored";
 
 const ALL_COLUMNS: { key: ColumnKey; label: string; requiresProfile?: boolean }[] = [
   { key: "score", label: "Score" },
@@ -30,87 +29,59 @@ const ALL_COLUMNS: { key: ColumnKey; label: string; requiresProfile?: boolean }[
 const DEFAULT_VISIBLE: ColumnKey[] = ["score", "title", "company", "location", "type", "seniority", "posted", "applied", "actions"];
 type ModalView = "detail" | "chat" | "cover-letter" | null;
 
-const QUICK_FILTERS: Array<{
-  key: "all" | AppliedFilter | "high-match";
-  label: string;
-  matches: (job: JobItem) => boolean;
-}> = [
-  {
-    key: "all",
-    label: "General Search",
-    matches: () => true,
-  },
-  {
-    key: "applied",
-    label: "Applied",
-    matches: (job) => job.applied,
-  },
-  {
-    key: "not-applied",
-    label: "Not Applied",
-    matches: (job) => !job.applied,
-  },
-  {
-    key: "high-match",
-    label: "Only High Match",
-    matches: (job) => job.score !== null && job.score >= 75,
-  },
-];
+const QUICK_FILTERS = [
+  { key: "all", label: "General Search" },
+  { key: "applied", label: "Applied" },
+  { key: "not-applied", label: "Not Applied" },
+  { key: "high-match", label: "Only High Match" }
+] as const;
 
-const matchesTextSearch = (job: JobItem, query: string) => {
-  if (!query) return true;
+const getVisiblePages = (currentPage: number, totalPages: number) => {
+  const startPage = Math.max(1, currentPage - 2);
+  const endPage = Math.min(totalPages, startPage + 4);
+  const adjustedStartPage = Math.max(1, endPage - 4);
 
-  const haystack = [
-    job.title,
-    job.company,
-    job.location,
-    job.description,
-    job.employmentType,
-    job.seniorityLevel,
-    job.jobFunction,
-    job.industries,
-    job.standardizedTitle,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  return haystack.includes(query);
-};
-
-const matchesAppliedFilter = (job: JobItem, filter: AppliedFilter) => {
-  if (filter === "applied") return job.applied;
-  if (filter === "not-applied") return !job.applied;
-  return true;
-};
-
-const matchesScoreFilter = (job: JobItem, filter: MatchFilter) => {
-  if (filter === "all") return true;
-  if (filter === "unscored") return job.score === null;
-  if (job.score === null) return false;
-  if (filter === "high") return job.score >= 75;
-  if (filter === "good") return job.score >= 50 && job.score < 75;
-  return job.score < 50;
+  return Array.from({ length: endPage - adjustedStartPage + 1 }, (_, index) => adjustedStartPage + index);
 };
 
 export const JobsTable = ({
   jobs: initialJobs,
-  hasProfile
+  hasProfile,
+  query,
+  appliedFilter,
+  matchFilter,
+  pagination,
+  summary
 }: {
   jobs: JobItem[];
   hasProfile: boolean;
+  query: string;
+  appliedFilter: JobAppliedFilter;
+  matchFilter: JobMatchFilter;
+  pagination: JobsPagination;
+  summary: JobsSummary;
 }) => {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [jobs, setJobs] = useState(initialJobs);
   const [activeJob, setActiveJob] = useState<JobItem | null>(null);
   const [activeModal, setActiveModal] = useState<ModalView>(null);
   const [toastJob, setToastJob] = useState<JobItem | null>(null);
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(new Set(DEFAULT_VISIBLE));
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
-  const [quickFilter, setQuickFilter] = useState<(typeof QUICK_FILTERS)[number]["key"]>("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [appliedFilter, setAppliedFilter] = useState<AppliedFilter>("all");
-  const [matchFilter, setMatchFilter] = useState<MatchFilter>("all");
+  const [searchQuery, setSearchQuery] = useState(query);
+  const [isPending, startTransition] = useTransition();
   const menuRef = useRef<HTMLDivElement>(null);
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  useEffect(() => {
+    setJobs(initialJobs);
+  }, [initialJobs]);
+
+  useEffect(() => {
+    setSearchQuery(query);
+  }, [query]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -135,16 +106,33 @@ export const JobsTable = ({
   const colCount =
     ALL_COLUMNS.filter((c) => show(c.key) && (!c.requiresProfile || hasProfile)).length;
 
-  const normalizedQuery = searchQuery.trim().toLowerCase();
-  const visibleJobs = jobs.filter((job) => {
-    const activeQuickFilter = QUICK_FILTERS.find((filter) => filter.key === quickFilter);
-    return (
-      (activeQuickFilter?.matches(job) ?? true) &&
-      matchesTextSearch(job, normalizedQuery) &&
-      matchesAppliedFilter(job, appliedFilter) &&
-      matchesScoreFilter(job, matchFilter)
-    );
-  });
+  const updateQueryParams = (updates: Record<string, string | null>) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+
+    Object.entries(updates).forEach(([key, value]) => {
+      if (!value) {
+        nextParams.delete(key);
+      } else {
+        nextParams.set(key, value);
+      }
+    });
+
+    const nextQueryString = nextParams.toString();
+    startTransition(() => {
+      router.replace(nextQueryString ? `${pathname}?${nextQueryString}` : pathname);
+    });
+  };
+
+  useEffect(() => {
+    const normalizedSearchQuery = deferredSearchQuery.trim();
+
+    if (normalizedSearchQuery === query) return;
+
+    updateQueryParams({
+      page: null,
+      query: normalizedSearchQuery ? normalizedSearchQuery : null
+    });
+  }, [deferredSearchQuery, query]);
 
   const updateModalJob = (job: JobItem | null, jobId: string, applied: boolean) =>
     job && job.id === jobId ? { ...job, applied } : job;
@@ -168,6 +156,10 @@ export const JobsTable = ({
       if (!response.ok) {
         throw new Error("Failed to update applied status");
       }
+
+      startTransition(() => {
+        router.refresh();
+      });
     } catch {
       setJobs(previousJobs);
       setActiveJob(previousActiveJob);
@@ -196,6 +188,36 @@ export const JobsTable = ({
   const handleToggleApplied = async (e: React.MouseEvent, jobId: string, applied: boolean) => {
     e.stopPropagation();
     await persistAppliedState(jobId, applied);
+  };
+
+  const hasActiveFilters =
+    query.trim().length > 0 || appliedFilter !== "all" || matchFilter !== "all";
+
+  const setShortcutFilter = (filterKey: (typeof QUICK_FILTERS)[number]["key"]) => {
+    if (filterKey === "all") {
+      updateQueryParams({ applied: null, match: null, page: null });
+      return;
+    }
+
+    if (filterKey === "high-match") {
+      updateQueryParams({ applied: null, match: "high", page: null });
+      return;
+    }
+
+    updateQueryParams({ applied: filterKey, match: null, page: null });
+  };
+
+  const isQuickFilterActive = (filterKey: (typeof QUICK_FILTERS)[number]["key"]) => {
+    if (filterKey === "all") return appliedFilter === "all" && matchFilter === "all";
+    if (filterKey === "high-match") return matchFilter === "high";
+    return appliedFilter === filterKey;
+  };
+
+  const getQuickFilterCount = (filterKey: (typeof QUICK_FILTERS)[number]["key"]) => {
+    if (filterKey === "all") return summary.total;
+    if (filterKey === "applied") return summary.appliedTotal;
+    if (filterKey === "not-applied") return summary.total - summary.appliedTotal;
+    return summary.highMatch;
   };
 
   const columnPicker = (
@@ -231,23 +253,62 @@ export const JobsTable = ({
     </div>
   );
 
-  const hasActiveFilters =
-    quickFilter !== "all" || searchQuery.trim().length > 0 || appliedFilter !== "all" || matchFilter !== "all";
-
   const resetFilters = () => {
-    setQuickFilter("all");
     setSearchQuery("");
-    setAppliedFilter("all");
-    setMatchFilter("all");
+    updateQueryParams({ applied: null, match: null, page: null, query: null });
   };
+
+  const currentRangeStart = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1;
+  const currentRangeEnd = pagination.total === 0 ? 0 : Math.min(pagination.total, pagination.page * pagination.pageSize);
+
+  const paginationControls = pagination.totalPages > 1 ? (
+    <div className="flex flex-col gap-3 border-t border-line/80 px-5 py-4 text-sm text-stone-500 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <p>
+        Page {pagination.page} of {pagination.totalPages}
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          className="rounded-full border border-line/70 px-3 py-1.5 font-medium text-stone-600 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={pagination.page === 1 || isPending}
+          onClick={() => updateQueryParams({ page: String(pagination.page - 1) })}
+          type="button"
+        >
+          Previous
+        </button>
+        {getVisiblePages(pagination.page, pagination.totalPages).map((pageNumber) => (
+          <button
+            key={pageNumber}
+            className={`rounded-full px-3 py-1.5 font-medium transition ${
+              pageNumber === pagination.page
+                ? "bg-accent text-white"
+                : "border border-line/70 text-stone-600 hover:bg-stone-100"
+            }`}
+            disabled={isPending}
+            onClick={() => updateQueryParams({ page: String(pageNumber) })}
+            type="button"
+          >
+            {pageNumber}
+          </button>
+        ))}
+        <button
+          className="rounded-full border border-line/70 px-3 py-1.5 font-medium text-stone-600 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={pagination.page === pagination.totalPages || isPending}
+          onClick={() => updateQueryParams({ page: String(pagination.page + 1) })}
+          type="button"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  ) : null;
 
   const filterBar = (
     <div className="flex flex-col gap-3 border-b border-line/80 px-5 py-4 sm:px-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-1 flex-wrap gap-2">
           {QUICK_FILTERS.map((filter) => {
-            const count = jobs.filter(filter.matches).length;
-            const active = quickFilter === filter.key;
+            const count = getQuickFilterCount(filter.key);
+            const active = isQuickFilterActive(filter.key);
             return (
               <button
                 key={filter.key}
@@ -256,7 +317,8 @@ export const JobsTable = ({
                     ? "border-accent/30 bg-accent text-white"
                     : "border-line/70 bg-surface/75 text-stone-600 hover:bg-stone-100"
                 }`}
-                onClick={() => setQuickFilter(filter.key)}
+                disabled={isPending}
+                onClick={() => setShortcutFilter(filter.key)}
                 type="button"
               >
                 <span>{filter.label}</span>
@@ -299,7 +361,13 @@ export const JobsTable = ({
           Applied State
           <select
             className="rounded-2xl border border-line/70 bg-white/80 px-3 py-2 text-sm font-normal normal-case tracking-normal text-stone-700 outline-none transition focus:border-accent/50"
-            onChange={(event) => setAppliedFilter(event.target.value as AppliedFilter)}
+            disabled={isPending}
+            onChange={(event) =>
+              updateQueryParams({
+                applied: event.target.value === "all" ? null : event.target.value,
+                page: null
+              })
+            }
             value={appliedFilter}
           >
             <option value="all">All jobs</option>
@@ -312,7 +380,13 @@ export const JobsTable = ({
           Match Quality
           <select
             className="rounded-2xl border border-line/70 bg-white/80 px-3 py-2 text-sm font-normal normal-case tracking-normal text-stone-700 outline-none transition focus:border-accent/50"
-            onChange={(event) => setMatchFilter(event.target.value as MatchFilter)}
+            disabled={isPending}
+            onChange={(event) =>
+              updateQueryParams({
+                match: event.target.value === "all" ? null : event.target.value,
+                page: null
+              })
+            }
             value={matchFilter}
           >
             <option value="all">All scores</option>
@@ -325,12 +399,12 @@ export const JobsTable = ({
       </div>
 
       <p className="text-sm text-stone-500">
-        Showing {visibleJobs.length} of {jobs.length} listing{jobs.length === 1 ? "" : "s"}.
+        Showing {currentRangeStart}-{currentRangeEnd} of {pagination.total} matching listing{pagination.total === 1 ? "" : "s"}.
       </p>
     </div>
   );
 
-  if (jobs.length === 0) {
+  if (summary.total === 0) {
     return (
       <table className="min-w-full text-left text-sm">
         <thead className="bg-surface/80 text-xs uppercase tracking-[0.18em] text-stone-500">
@@ -379,8 +453,8 @@ export const JobsTable = ({
           </tr>
         </thead>
         <tbody>
-          {visibleJobs.length > 0 ? (
-            visibleJobs.map((job) => (
+          {jobs.length > 0 ? (
+            jobs.map((job) => (
               <tr
                 className="cursor-pointer border-t border-line/70 transition hover:bg-accent/5"
                 key={job.id}
@@ -455,6 +529,7 @@ export const JobsTable = ({
           )}
         </tbody>
       </table>
+      {paginationControls}
 
       <JobDetailModal
         job={activeModal === "detail" ? activeJob : null}

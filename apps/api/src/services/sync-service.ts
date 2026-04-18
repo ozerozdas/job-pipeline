@@ -3,6 +3,7 @@ import { dateKeyToDate, getDateKey, type SyncResponse } from "@job-pipeline/shar
 
 import { env } from "../lib/env";
 import { fetchApifyJobs } from "./apify-job-source";
+import { getJobIdentityTokens, selectPreferredJob } from "./job-identity";
 import { fetchMockJobs } from "./mock-job-source";
 import { getSearchUrlStrings } from "./search-url-service";
 
@@ -32,8 +33,48 @@ export const syncJobsForToday = async (): Promise<SyncResponse> => {
       : await fetchMockJobs(dateKey);
     const syncedAt = new Date();
 
-    const result = await prisma.job.createMany({
-      data: externalJobs.map((job) => ({
+    const existingJobs = await prisma.job.findMany({
+      select: {
+        id: true,
+        source: true,
+        externalId: true,
+        url: true,
+        applied: true,
+        createdAt: true,
+        syncedAt: true,
+        scores: {
+          select: { id: true },
+          take: 1
+        }
+      }
+    });
+
+    const jobsByToken = new Map<string, typeof existingJobs>();
+
+    const addJobToIndexes = (job: (typeof existingJobs)[number]) => {
+      for (const token of getJobIdentityTokens(job)) {
+        const currentJobs = jobsByToken.get(token);
+
+        if (currentJobs) {
+          if (!currentJobs.some((currentJob) => currentJob.id === job.id)) {
+            currentJobs.push(job);
+          }
+        } else {
+          jobsByToken.set(token, [job]);
+        }
+      }
+    };
+
+    existingJobs.forEach(addJobToIndexes);
+
+    let insertedCount = 0;
+    let updatedCount = 0;
+
+    for (const job of externalJobs) {
+      const matchingTokens = getJobIdentityTokens(job);
+      const matchingJobs = matchingTokens.flatMap((token) => jobsByToken.get(token) ?? []);
+      const uniqueMatchingJobs = [...new Map(matchingJobs.map((existingJob) => [existingJob.id, existingJob])).values()];
+      const jobData = {
         externalId: job.externalId,
         title: job.title,
         company: job.company,
@@ -64,9 +105,54 @@ export const syncJobsForToday = async (): Promise<SyncResponse> => {
         jobPosterPhoto: job.jobPosterPhoto,
         jobPosterProfileUrl: job.jobPosterProfileUrl,
         syncedAt
-      })),
-      skipDuplicates: true
-    });
+      };
+
+      if (uniqueMatchingJobs.length > 0) {
+        const targetJob = selectPreferredJob(uniqueMatchingJobs);
+
+        const updatedJob = await prisma.job.update({
+          where: { id: targetJob.id },
+          data: jobData,
+          select: {
+            id: true,
+            source: true,
+            externalId: true,
+            url: true,
+            applied: true,
+            createdAt: true,
+            syncedAt: true,
+            scores: {
+              select: { id: true },
+              take: 1
+            }
+          }
+        });
+
+        addJobToIndexes(updatedJob);
+        updatedCount += 1;
+        continue;
+      }
+
+      const createdJob = await prisma.job.create({
+        data: jobData,
+        select: {
+          id: true,
+          source: true,
+          externalId: true,
+          url: true,
+          applied: true,
+          createdAt: true,
+          syncedAt: true,
+          scores: {
+            select: { id: true },
+            take: 1
+          }
+        }
+      });
+
+      addJobToIndexes(createdJob);
+      insertedCount += 1;
+    }
 
     await prisma.syncLog.create({
       data: {
@@ -77,9 +163,9 @@ export const syncJobsForToday = async (): Promise<SyncResponse> => {
 
     return {
       status: "synced",
-      insertedCount: result.count,
+      insertedCount,
       date: dateKey,
-      message: `Synced ${result.count} jobs`
+      message: `Synced ${insertedCount} new jobs and refreshed ${updatedCount} existing jobs`
     };
   } catch (error) {
     await prisma.syncLog
