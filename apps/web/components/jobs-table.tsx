@@ -12,10 +12,11 @@ import { JobActionsDropdown } from "./job-actions-dropdown";
 import { JobChatModal } from "./job-chat-modal";
 import { JobDetailModal } from "./job-detail-modal";
 
-type ColumnKey = "score" | "title" | "company" | "location" | "type" | "seniority" | "posted" | "applied" | "actions";
+type ColumnKey = "score" | "provider" | "title" | "company" | "location" | "type" | "seniority" | "posted" | "applied" | "actions";
 
 const ALL_COLUMNS: { key: ColumnKey; label: string; requiresProfile?: boolean }[] = [
   { key: "score", label: "Score" },
+  { key: "provider", label: "Provider" },
   { key: "title", label: "Title" },
   { key: "company", label: "Company" },
   { key: "location", label: "Location" },
@@ -26,7 +27,7 @@ const ALL_COLUMNS: { key: ColumnKey; label: string; requiresProfile?: boolean }[
   { key: "actions", label: "Actions", requiresProfile: true },
 ];
 
-const DEFAULT_VISIBLE: ColumnKey[] = ["score", "title", "company", "location", "type", "seniority", "posted", "applied", "actions"];
+const DEFAULT_VISIBLE: ColumnKey[] = ["score", "provider", "title", "company", "location", "type", "seniority", "posted", "applied", "actions"];
 type ModalView = "detail" | "chat" | "cover-letter" | null;
 
 const QUICK_FILTERS = [
@@ -43,6 +44,13 @@ const getVisiblePages = (currentPage: number, totalPages: number) => {
 
   return Array.from({ length: endPage - adjustedStartPage + 1 }, (_, index) => adjustedStartPage + index);
 };
+
+const formatProvider = (provider: string) =>
+  provider
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 
 export const JobsTable = ({
   jobs: initialJobs,
@@ -410,6 +418,7 @@ export const JobsTable = ({
         <thead className="bg-surface/80 text-xs uppercase tracking-[0.18em] text-stone-500">
           <tr>
             {show("score") && <th className="px-4 py-3 font-medium">Score</th>}
+            {show("provider") && <th className="px-4 py-3 font-medium">Provider</th>}
             {show("title") && <th className="px-4 py-3 font-medium">Title</th>}
             {show("company") && <th className="px-4 py-3 font-medium">Company</th>}
             {show("location") && <th className="px-4 py-3 font-medium">Location</th>}
@@ -442,6 +451,7 @@ export const JobsTable = ({
         <thead className="bg-surface/80 text-xs uppercase tracking-[0.18em] text-stone-500">
           <tr>
             {show("score") && <th className="px-4 py-3 font-medium">Score</th>}
+            {show("provider") && <th className="px-4 py-3 font-medium">Provider</th>}
             {show("title") && <th className="px-4 py-3 font-medium">Title</th>}
             {show("company") && <th className="px-4 py-3 font-medium">Company</th>}
             {show("location") && <th className="px-4 py-3 font-medium">Location</th>}
@@ -478,6 +488,13 @@ export const JobsTable = ({
                     ) : (
                       <span className="text-stone-300">—</span>
                     )}
+                  </td>
+                )}
+                {show("provider") && (
+                  <td className="px-4 py-3">
+                    <span className="inline-flex rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">
+                      {formatProvider(job.source)}
+                    </span>
                   </td>
                 )}
                 {show("title") && <td className="px-4 py-3 font-medium text-ink">{job.title}</td>}

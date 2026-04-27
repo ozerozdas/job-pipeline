@@ -1,4 +1,5 @@
 export type JobSource = "linkedin" | "greenhouse" | "lever" | "indeed" | string;
+export type JobSourceType = "linkedin_apify" | "rss_feed" | (string & {});
 
 export interface JobItem {
   id: string;
@@ -134,6 +135,8 @@ export interface SearchUrlItem {
   id: string;
   url: string;
   label: string | null;
+  provider: string;
+  sourceType: JobSourceType;
   createdAt: string;
   updatedAt: string;
 }

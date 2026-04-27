@@ -1,6 +1,6 @@
 "use client";
 
-import type { SearchUrlItem } from "@job-pipeline/shared";
+import type { JobSourceType, SearchUrlItem } from "@job-pipeline/shared";
 import { useEffect, useRef, useState } from "react";
 
 import { getClientApiBaseUrl } from "../lib/api";
@@ -10,9 +10,28 @@ interface SearchUrlsModalProps {
   onClose: () => void;
 }
 
+type EditableSource = {
+  id: string;
+  url: string;
+  label: string;
+  provider: string;
+  sourceType: JobSourceType;
+};
+
+const SOURCE_TYPES: { value: JobSourceType; label: string }[] = [
+  { value: "linkedin_apify", label: "LinkedIn via Apify" },
+  { value: "rss_feed", label: "RSS Feed" },
+];
+
 export const SearchUrlsModal = ({ initialUrls, onClose }: SearchUrlsModalProps) => {
   const overlayRef = useRef<HTMLDivElement>(null);
-  const [urls, setUrls] = useState(initialUrls.map((u) => ({ id: u.id, url: u.url, label: u.label ?? "" })));
+  const [urls, setUrls] = useState<EditableSource[]>(initialUrls.map((u) => ({
+    id: u.id,
+    url: u.url,
+    label: u.label ?? "",
+    provider: u.provider || "linkedin",
+    sourceType: u.sourceType || "linkedin_apify",
+  })));
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -29,15 +48,24 @@ export const SearchUrlsModal = ({ initialUrls, onClose }: SearchUrlsModalProps) 
   }, [onClose]);
 
   const handleAdd = () => {
-    setUrls((prev) => [...prev, { id: crypto.randomUUID(), url: "", label: "" }]);
+    setUrls((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        url: "",
+        label: "",
+        provider: "linkedin",
+        sourceType: "linkedin_apify",
+      },
+    ]);
   };
 
   const handleRemove = (index: number) => {
     setUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleChange = (index: number, field: "url" | "label", value: string) => {
-    setUrls((prev) => prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)));
+  const handleChange = (index: number, field: keyof Omit<EditableSource, "id">, value: string) => {
+    setUrls((prev) => prev.map((item, i) => (i === index ? ({ ...item, [field]: value } as EditableSource) : item)));
   };
 
   const handleSave = async () => {
@@ -55,7 +83,12 @@ export const SearchUrlsModal = ({ initialUrls, onClose }: SearchUrlsModalProps) 
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          urls: validUrls.map((u) => ({ url: u.url, label: u.label || undefined })),
+          urls: validUrls.map((u) => ({
+            url: u.url,
+            label: u.label || undefined,
+            provider: u.provider || undefined,
+            sourceType: u.sourceType,
+          })),
         }),
       });
 
@@ -81,9 +114,9 @@ export const SearchUrlsModal = ({ initialUrls, onClose }: SearchUrlsModalProps) 
         {/* Header */}
         <div className="flex items-start justify-between gap-4 border-b border-line/80 px-6 py-5">
           <div className="min-w-0 space-y-1">
-            <h2 className="text-lg font-semibold leading-snug text-ink">Search URLs</h2>
+            <h2 className="text-lg font-semibold leading-snug text-ink">Job Sources</h2>
             <p className="text-sm text-stone-500">
-              Manage LinkedIn search URLs used for job syncing.
+              Manage LinkedIn search URLs and RSS feeds used for job syncing.
             </p>
           </div>
           <button
@@ -105,7 +138,7 @@ export const SearchUrlsModal = ({ initialUrls, onClose }: SearchUrlsModalProps) 
             <div key={item.id} className="group flex flex-col gap-2 rounded-xl border border-line/60 bg-surface/40 p-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium uppercase tracking-wider text-stone-400">
-                  URL #{index + 1}
+                  Source #{index + 1}
                 </span>
                 <button
                   type="button"
@@ -126,10 +159,36 @@ export const SearchUrlsModal = ({ initialUrls, onClose }: SearchUrlsModalProps) 
                 placeholder="Label (optional)"
                 className="w-full rounded-lg border border-line/80 bg-white px-3 py-2 text-sm text-ink placeholder:text-stone-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
               />
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                <label className="flex flex-col gap-1 text-xs font-medium uppercase tracking-wider text-stone-400">
+                  Type
+                  <select
+                    value={item.sourceType}
+                    onChange={(e) => handleChange(index, "sourceType", e.target.value)}
+                    className="rounded-lg border border-line/80 bg-white px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                  >
+                    {SOURCE_TYPES.map((sourceType) => (
+                      <option key={sourceType.value} value={sourceType.value}>
+                        {sourceType.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-xs font-medium uppercase tracking-wider text-stone-400">
+                  Provider
+                  <input
+                    type="text"
+                    value={item.provider}
+                    onChange={(e) => handleChange(index, "provider", e.target.value)}
+                    placeholder="linkedin or larajobs"
+                    className="rounded-lg border border-line/80 bg-white px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink placeholder:text-stone-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
+                </label>
+              </div>
               <textarea
                 value={item.url}
                 onChange={(e) => handleChange(index, "url", e.target.value)}
-                placeholder="https://www.linkedin.com/jobs/search/?..."
+                placeholder={item.sourceType === "rss_feed" ? "https://larajobs.com/feed" : "https://www.linkedin.com/jobs/search/?..."}
                 rows={2}
                 className="w-full rounded-lg border border-line/80 bg-white px-3 py-2 text-sm text-ink placeholder:text-stone-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent resize-none font-mono text-xs"
               />
@@ -145,7 +204,7 @@ export const SearchUrlsModal = ({ initialUrls, onClose }: SearchUrlsModalProps) 
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            Add URL
+            Add Source
           </button>
         </div>
 

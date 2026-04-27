@@ -5,7 +5,32 @@ import { env } from "../lib/env";
 import { fetchApifyJobs } from "./apify-job-source";
 import { getJobIdentityTokens, selectPreferredJob } from "./job-identity";
 import { fetchMockJobs } from "./mock-job-source";
-import { getSearchUrlStrings } from "./search-url-service";
+import { fetchRssJobs } from "./rss-job-source";
+import { getSearchUrls } from "./search-url-service";
+
+const fetchExternalJobs = async (dateKey: string) => {
+  const sources = await getSearchUrls();
+  const linkedinUrls = sources
+    .filter((source) => source.sourceType === "linkedin_apify")
+    .map((source) => source.url);
+  const rssSources = sources
+    .filter((source) => source.sourceType === "rss_feed")
+    .map((source) => ({
+      url: source.url,
+      provider: source.provider
+    }));
+
+  const [linkedinJobs, rssJobs] = await Promise.all([
+    linkedinUrls.length > 0
+      ? env.apifyToken
+        ? fetchApifyJobs(linkedinUrls)
+        : fetchMockJobs(dateKey)
+      : Promise.resolve([]),
+    rssSources.length > 0 ? fetchRssJobs(rssSources) : Promise.resolve([])
+  ]);
+
+  return [...linkedinJobs, ...rssJobs];
+};
 
 export const syncJobsForToday = async (): Promise<SyncResponse> => {
   const dateKey = getDateKey(new Date(), env.appTimeZone);
@@ -27,10 +52,7 @@ export const syncJobsForToday = async (): Promise<SyncResponse> => {
   }
 
   try {
-    const searchUrls = await getSearchUrlStrings();
-    const externalJobs = env.apifyToken
-      ? await fetchApifyJobs(searchUrls)
-      : await fetchMockJobs(dateKey);
+    const externalJobs = await fetchExternalJobs(dateKey);
     const syncedAt = new Date();
 
     const existingJobs = await prisma.job.findMany({

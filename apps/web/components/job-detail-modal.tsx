@@ -28,6 +28,13 @@ const Badge = ({ children }: { children: React.ReactNode }) => (
   </span>
 );
 
+const formatProvider = (provider: string) =>
+  provider
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
 export const JobDetailModal = ({ job, onClose, onChat, onCoverLetter }: JobDetailModalProps) => {
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -104,7 +111,7 @@ export const JobDetailModal = ({ job, onClose, onChat, onCoverLetter }: JobDetai
             <Detail label="Applicants" value={job.applicantsCount} />
             <Detail label="Posted" value={job.postedAt ? formatDateTime(job.postedAt) : null} />
             <Detail label="Expires" value={job.expireAt ? formatDateTime(job.expireAt) : null} />
-            <Detail label="Source" value={job.source} />
+            <Detail label="Source" value={formatProvider(job.source)} />
           </dl>
 
           {/* Benefits */}
@@ -197,7 +204,7 @@ export const JobDetailModal = ({ job, onClose, onChat, onCoverLetter }: JobDetai
               rel="noopener noreferrer"
               className="rounded-full border border-stone-200 px-4 py-2 text-sm font-medium text-stone-600 transition hover:bg-stone-50"
             >
-              View on LinkedIn
+              View on {formatProvider(job.source)}
             </a>
           </div>
         </div>

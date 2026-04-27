@@ -123,7 +123,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         {/* Step 1: Always visible */}
         <SyncButton />
 
-        {/* Manage search URLs */}
+        {/* Manage job sources */}
         <ManageSearchUrlsButton />
 
         {/* Step 2: Always visible (can upload anytime) */}

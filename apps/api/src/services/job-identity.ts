@@ -40,7 +40,8 @@ export const normalizeJobUrl = (rawUrl: string) => {
 
 export const getJobIdentityTokens = ({ source, externalId, url }: IdentityInput) => {
   const normalizedSource = normalizeSource(source);
-  const tokens = [`${normalizedSource}::url::${normalizeJobUrl(url)}`];
+  const normalizedUrl = normalizeJobUrl(url);
+  const tokens = [`${normalizedSource}::url::${normalizedUrl}`, `url::${normalizedUrl}`];
   const normalizedExternalId = externalId?.trim();
 
   if (normalizedExternalId) {

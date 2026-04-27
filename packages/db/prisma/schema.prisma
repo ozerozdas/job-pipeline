@@ -83,6 +83,8 @@ model SearchUrl {
   id        String   @id @default(uuid())
   url       String   @db.Text
   label     String?
+  provider  String   @default("linkedin")
+  sourceType String  @default("linkedin_apify")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
