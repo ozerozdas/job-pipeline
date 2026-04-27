@@ -1,4 +1,31 @@
 services:
+  app:
+    image: ${APP_IMAGE:-ozerozdas/job-pipeline:latest}
+    build:
+      context: .
+    profiles:
+      - app
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+      - "${API_PORT:-3001}:3001"
+    environment:
+      DATABASE_URL: ${APP_DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/jobs_db?schema=public}
+      API_PORT: 3001
+      WEB_PORT: 3000
+      API_BASE_URL: http://127.0.0.1:3001
+      NEXT_PUBLIC_API_BASE_URL: /api
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
+      APP_TIMEZONE: ${APP_TIMEZONE:-UTC}
+      APIFY_TOKEN: ${APIFY_TOKEN:-}
+      APIFY_ACTOR_ID: ${APIFY_ACTOR_ID:-hKByXkMQaC5Qt9UMN}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      DB_SETUP_MODE: ${DB_SETUP_MODE:-push}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     image: postgres:16-alpine
     container_name: job-pipeline-postgres

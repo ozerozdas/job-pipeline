@@ -38,7 +38,7 @@ export const getResumeProfile = async (): Promise<ResumeProfileResponse | null> 
 };
 
 export const getClientApiBaseUrl = () =>
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api";
 
 export const getSearchUrls = async (): Promise<SearchUrlsResponse> => {
   const response = await fetch(`${apiBaseUrl}/search-urls`, {

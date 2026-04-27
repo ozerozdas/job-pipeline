@@ -38,6 +38,9 @@ importers:
       '@job-pipeline/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@prisma/client':
+        specifier: ^6.0.1
+        version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
       apify-client:
         specifier: ^2.23.0
         version: 2.23.0

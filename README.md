@@ -29,6 +29,22 @@ pnpm dev              # start API + web
 
 The app runs at `http://localhost:3000` (web) and `http://localhost:3001` (API).
 
+## Docker Image
+
+Published image: `ozerozdas/job-pipeline:latest`.
+
+```bash
+docker run --rm \
+  -p 3000:3000 \
+  -p 3001:3001 \
+  -e DATABASE_URL="postgresql://user:password@host:5432/jobs_db?schema=public" \
+  -e APIFY_TOKEN="..." \
+  -e OPENAI_API_KEY="..." \
+  ozerozdas/job-pipeline:latest
+```
+
+The container runs `prisma db push` on start by default. Use `DB_SETUP_MODE=none` if the database is managed elsewhere.
+
 ## API Keys
 
 Add the following keys to your `.env` file:
